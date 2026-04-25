@@ -1,0 +1,40 @@
+import os
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+# ส่วนนี้คือส่วนที่หายไป ทำให้เกิด Error ครับ
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from dotenv import load_dotenv
+
+# โหลดค่าจากไฟล์ .env
+load_dotenv()
+
+app = Flask(__name__)
+
+# ดึงรหัสจาก environment variables
+line_bot_api = LineBotApi(os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
+handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
+
+# ... (โค้ดส่วนที่เหลือของคุณตามปกติ)
+
+
+@app.route("/callback", methods=['POST'])
+def callback():
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+    return 'OK'
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    reply_text = "บอทได้รับข้อความของคุณแล้ว: " + event.message.text
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply_text)
+    )
+
+if __name__ == "__main__":
+    app.run(port=5000)
